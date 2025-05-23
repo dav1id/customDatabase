@@ -1,76 +1,91 @@
-/*
-Goal is to create an inputBuffer that saves the input, sees if the input
-is .exit() (or another method to exit the database - will create my own syntax lateer)
-Create a system that clears parts of the input (kind of like cin.ignore, cin.clear) by prompting the user
-when the input buffer gets too full
-*/
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct {
-	char* buffer;
-	bufferNode *next;
-	size_t bufferSize;
+    char* buffer;
+    size_t bufferSize;
+    ssize_t inputLength; // Use of two size variables (bufferSize/inLen)
 } inBuffer;
 
-typedef struct {
-	char data;
-	bufferNode *next;
-	size_t nodeSize; 
-} bufferNode;
+// Typedefs for our meta commands (exterior commands like .exit), and compare_commands to compare the input from the processor (prepare_statement) to be sent to the virtual machine. this reduces the stress on the virtual machine and lets us pinpoint errors
+typedef enum {
+    STATEMENT_INSERT,
+    STATEMENT_SELECT
+} statementType
 
-inBuffer* createBuffer(data){
-    // Create the buffer, return a pointer to go through buffer
-	inBuffer *inputBuffer = malloc(inBuffer);
-	inputBuffer->data  = this->data;
-	inputBuffer->next = nullptr;
+typedef enum {
+    META_COMMAND_SUCCESS,
+    META_COMMAND_UNRECOGNIZED_COMMAND
+} meta_commands;
 
-	return inputBuffer;
+typedef enum {
+    PREPARE_SUCCESS,
+    PREPARE_UNRECOGNIZED_STATEMENT
+} prepare_result;
+
+
+inBuffer* newInputBuffer(){
+    inBuffer *inputBuffer = malloc(sizeof(inBuffer));
+    inputBuffer->buffer = NULL;
+    inputBuffer->bufferSize = 0;
+    inputBuffer->inputLength = 0;
+    
+    return inputBuffer;
 };
 
-bufferNode* createBufferNode(inputBuffer){
-	bufferNode *bN = malloc(bufferNode);
-	if (inputBuffer->next == nullptr) inputBuffer->next = bn;
-
-	bufferNode *nSelect = inputBuffer->next;
-
-	while (nSelect->next != nullptr){
-		nSelect = nSelect->next;
-	};
- 
-	return bufferNode;
+meta_commands getMetaCommands(inBuffer *inputBuffer){
+    if (strcmp(inputBuffer->buffer, ".exit") == 0){
+        return META_COMMAND_UNRECOGNIZED_COMMAND;
+    };
+    
+    return META_COMMAND_SUCCESS;
 };
 
-void readInput(inBuffer* buffer){
-    // Read the input sent to the buffer
-	bufferNode *select = buffer->next;
-	size_t tempSize = 0; size_t nodeSize = select->size;
+void printPrompt(){printf("%s","db > "); }
 
-	while (true){
-	
-	};
+void readInput(inBuffer *inB){
+    ssize_t bytesRead = getline(&(inB->buffer), &(inB->bufferSize), stdin); //getline asks for the address of where to store the result, and uses the signed byte type so that you can check if the bytes read are negative (meaning there was an error in its buffer
+    
+    if (bytesRead <= 1){ // if the bytesRead is negative then exit
+            printf("%s\n", "Error reading input");
+            exit(EXIT_FAILURE);
+        }
+    
+    inB->inputLength = bytesRead - 1;
+    inB->buffer[bytesRead - 1] = 0;
 };
 
-void closeInputBuffer(struct inputBuffer* buffer){
-// Free allocated memory to buffer (destructor)
-	bufferNode *nSelect = inputBuffer->next;
-
-	while (nSelect->next != nullptr){
-		bufferNode *temp = nSelect;
-		nSelect = nSelect->next;
-
-		free(temp);
-	};
+void closeInputBuffer(inBuffer *inputBuffer){ // Free the memory allocated to the structure buffer
+    free(inputBuffer->buffer); // getline allocates memory so we're responsible for freeing i
+    free(inputBuffer);
 };
 
-struct clearBuffer* clearBuffer(struct inputBuffer* buffer){
-    // Clears the buffer, returns pointer to buffer
+int main(int argc, char* argv[]){
+    inBuffer *newBuffer = newInputBuffer();
 
+    while(1){
+        printPrompt();
+        readInput(newBuffer);
+        // printf("%s\n", newBuffer->buffer);
+        
+        
+        // switch for meta commands (like .exit)
+        
+        if (strncmp(newBuffer->buffer, ".", 1) == 0){
+            switch(getMetaCommands(newBuffer->buffer)) {
+                case META_COMMAND_UNRECOGNIZED_COMMAND:
+                    printf("%s\n", "Error reading input");
+                    exit(EXIT_FAILURE);
+                    
+                case META_COMMAND_SUCCESS:
+                    continue
+            }
+        }
+        
+
+        // switch for statements like (insert, select, etcetra)
+    };
+        
 };
 
-void promptDataEntry() {printf("%s", "db > ");} 
-
-int main(int argc, int argv[]){
-
-    return 0; 
-}
