@@ -1,4 +1,6 @@
 #ifndef MAIN.H
+
+
 #define MAIN.H
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,9 +11,15 @@
 #define TABLE_SIZE (4096*10); // Number of bytes is 4096, for 10 pages
 
 #define size_of_attribute(Struct, Attribute) sizeof(((Struct*)0)->Attribute)
-ID_BYTE_SIZE = size_of_attribute(Row, id);
-USERNAME_BYTE_SIZE = size_of_attribute(Row, username);
-EMAIL_BYTE_SIZE = size_of_attribute(Row, email);
+
+const uint32_t ID_BYTE_SIZE = size_of_attribute(Row, id);
+const uint32_t USERNAME_BYTE_SIZE = size_of_attribute(Row, username);
+const uint32_t EMAIL_BYTE_SIZE = size_of_attribute(Row, email);
+
+const uint32_t ID_OFFSET = 4;
+const uint32_t USERNAME_OFFSET = ID_OFFSET + USERNAME_BYTE_SIZE;
+const uint32_t EMAIL_OFFSET = USERNAME_OFFSET + EMAIL_BYTE_SIZE;
+const uint32_t ROW_OFFSET = ID_OFFSET + USERNAME_OFFSET + EMAIL_OFFSET; 
 
 typedef struct {
     char* buffer;
@@ -43,12 +51,16 @@ typedef struct {
     uint_32t id;
     char[32] username;
     char[255] email; 
+
+    email[31] = "/0"; // select knows when it's gone through a row by reaching an escape character
 } Row;
 
 typedef struct{
-    int* location; //specifies the location of the table
-    int offset; // specifies the LSB's in the memory address
+    void* basePointer; //points to the beginning of the table's memory location
+    void* stackPointer; //specifices the last memory locations
 } Table;
+
+
 #endif
 
 

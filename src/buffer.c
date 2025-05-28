@@ -2,9 +2,6 @@
 #include <stdio.h>
 #include <string.h>
 
-const uint32_t USERNAME_OFFSET = 2;
-const uint32_t EMAIL_OFFSET = 36;
-
 inBuffer* newInputBuffer(){
     inBuffer *inputBuffer = malloc(sizeof(inBuffer));
     inputBuffer->buffer = NULL;

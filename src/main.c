@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <main.h>
 #include <buffer.c>
@@ -32,7 +33,23 @@ prepare_result getPrepareResult(const char* buffer, statement *stmnt, Row *row){
     return PREPARE_UNRECOGNIZED_STATEMENT;
 };
 
-void executeCommand(inBuffer *inputBuffer, statement *stmnt
+void execute_insert(Table *table, Row *row){
+    serialize_row(table->stackPointer, row->id, ID_BYTE_SIZE);
+    serialize_row(table->stackPointer+USERNAME_OFFSET, row->username, USERNAME_BYTE_SIZE);
+    serialize_row(table->stackPointer+EMAIL_OFFSET, row->email, EMAIL_BYTE_SIZE);
+
+    stackPointer += ROW_OFFSET;
+};
+
+void serialize_row(void* location, void *from, byte_size) // -> pointer to the address of id, username, email
+    memcpy(&location, &from, ID_BYTE_SIZE);
+    memcpy(&location, &from, USERNAME_BYTE_SIZE);
+    memcpy(&location, &from, EMAIL_BYTE_SIZE);
+};
+
+//void deserialize_row(){};
+
+void execute_statement(inBuffer *inputBuffer, statement *stmnt
                     Row *row, Table *table){
     switch (stmnt->type){
         case STATEMENT_INSERT:
