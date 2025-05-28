@@ -2,46 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct {
-    char* buffer;
-    size_t bufferSize;
-    ssize_t inputLength; // Use of two size variables (bufferSize/inLen)
-} inBuffer;
-
-// Typedefs for our meta commands (exterior commands like .exit), and compare_commands to compare the input from the processor (prepare_statement) to be sent to the virtual machine. this reduces the stress on the virtual machine and lets us pinpoint errors
-
-typedef enum {
-    STATEMENT_INSERT,
-    STATEMENT_SELECT
-} statementType;
-
-typedef enum {
-    META_COMMAND_SUCCESS,
-    META_COMMAND_UNRECOGNIZED_COMMAND
-} meta_commands;
-
-typedef enum {
-    PREPARE_SUCCESS,
-    PREPARE_UNRECOGNIZED_STATEMENT
-} prepare_result;
-
-typedef struct { // holds the actual statement select, to verify if the user actually put in a statement. the idea is to make it methodological, break all of it into steps so that you can address the error
-    statementType type;
-} statement;
-
-inBuffer* newInputBuffer(){
-    inBuffer *inputBuffer = malloc(sizeof(inBuffer));
-    inputBuffer->buffer = NULL;
-    inputBuffer->bufferSize = 0;
-    inputBuffer->inputLength = 0;
-    
-    return inputBuffer;
-};
-
-void closeInputBuffer(inBuffer *inputBuffer){ // Free the memory allocated to the structure buffer
-    free(inputBuffer->buffer); // getline allocates memory so we're responsible for freeing i
-    free(inputBuffer);
-};
+#include <main.h>
+#include <buffer.c>
 
 meta_commands getMetaCommands(inBuffer *inputBuffer){
     if (strcmp(inputBuffer->buffer, ".exit") == 0){
@@ -52,14 +14,16 @@ meta_commands getMetaCommands(inBuffer *inputBuffer){
     return META_COMMAND_SUCCESS;
 };
 
-
 //Acts as the tokenizer -> reads through the different options and sees if user selection matches enum case
-prepare_result getPrepareResult(const char* buffer, statement *stmnt){
+prepare_result getPrepareResult(const char* buffer, statement *stmnt, Row *row){
     fflush(stdout);
+
     if (strncmp(buffer, ".insert", 6) == 0){
         stmnt->type = STATEMENT_INSERT;
+        sscanf(buffer,".insert %d %s %s", &(row->id), row->username, row->email);
+        
         return PREPARE_SUCCESS;
-                
+    
     } else if (strcmp(buffer, ".select") == 0){
         stmnt->type = STATEMENT_SELECT;
         return PREPARE_SUCCESS;
@@ -68,7 +32,8 @@ prepare_result getPrepareResult(const char* buffer, statement *stmnt){
     return PREPARE_UNRECOGNIZED_STATEMENT;
 };
 
-void executeCommand(inBuffer *inputBuffer, statement *stmnt){
+void executeCommand(inBuffer *inputBuffer, statement *stmnt
+                    Row *row, Table *table){
     switch (stmnt->type){
         case STATEMENT_INSERT:
             printf("%s\n", "User selected insert command");
@@ -94,33 +59,26 @@ void readInput(inBuffer *inB){
     inB->buffer[bytesRead - 1] = 0;
 };
 
-
 int main(int argc, char* argv[]){
     inBuffer *newBuffer = newInputBuffer();
+    Table *table = malloc(sizeof(TABLE_SIZE));
+    Row *row = malloc(sizeof(ROW_SIZE));
 
     while(1){
         printPrompt();
         readInput(newBuffer);
         statement *newStatement;
         
-        // switch for meta commands (like .exit)
         if (strncmp(newBuffer->buffer, ".", 1) == 0){
-            //printf("%s\n", newBuffer->buffer);
-            
             switch(getMetaCommands(newBuffer)) {
                 case META_COMMAND_UNRECOGNIZED_COMMAND:
-                    continue;
-                 //   continue; continue jumps to the next iteration of the while loop
-                    
+                    continue; //continue; continue jumps to the next iteration of the while loop
                 case META_COMMAND_SUCCESS:
             }
-            
-            //getMetaCommands(newBuffer);
-            
-            switch(getPrepareResult(newBuffer->buffer, newStatement)) {
+
+            switch(getPrepareResult(newBuffer->buffer, newStatement, row)) {
                 case PREPARE_SUCCESS:
-                  //  printf("%s\n","Recognized keyword");
-                    executeCommand(newBuffer, newStatement);
+                    executeCommand(newBuffer, newStatement, row);
                     continue;
                     
                 case PREPARE_UNRECOGNIZED_STATEMENT:
@@ -133,4 +91,3 @@ int main(int argc, char* argv[]){
     };
         
 };
-
